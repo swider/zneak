@@ -25,3 +25,6 @@ Uses
 * less
 * jQuery
 * heroku
+* mongoDB
+* mongoose
+* mongoLab
