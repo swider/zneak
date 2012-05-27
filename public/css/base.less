@@ -1,0 +1,129 @@
+/*
+ * Editor Styles
+ * @author: Nick Swider
+ */
+
+@import "lib";
+
+/* ---------------------
+				 RESET
+--------------------- */
+html, body, div, span, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, code, del, em, font, img, small, strike, strong, dl, dt, dd, ol, ul, li, fieldset, form, label, table, caption, tbody, tfoot, thead, tr, th, td, nav, menu {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	font-size: 100%;
+	vertical-align: baseline;
+	background: transparent;
+}
+ol, ul { list-style: none; }
+/* tables still need 'cellspacing="0"' in the markup */
+table { border-collapse: collapse; border-spacing: 0; }
+
+/* clearfix */
+.cf:before, .cf:after { content:""; display:table; }
+.cf:after { clear:both; }
+
+
+/* ---------------------
+				 BASE
+--------------------- */
+
+html, body {
+	height: 100%;
+}
+html {
+	background: blanchedalmond;
+	font: 500 13px/1.3em "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#header-wrapper {
+	width: 100%;
+	height: 40px;
+	overflow: hidden;
+	color: #e1e1e1;
+	background: #212121;
+	.transition(height, .5s);
+	&.showSettings { height: 250px; }
+	#navbar {
+		.navbar-left {
+			float: left;
+			padding: 0 0 0 20px;
+			h1 {
+				font-size: 18px;
+				line-height: 2.1em;
+			}
+		}
+		.navbar-right {
+			float: right;
+			padding: 10px 20px;
+		}
+	}
+	#settings-container {
+		position: relative;
+		margin-top: 45px;
+		padding: 10px;
+	}
+}
+
+
+#editor-container {
+	display: table;
+	width: 100%;
+	#editor-inner {
+		display: table-row;
+		.editor-col {
+			display: table-cell;
+			position: relative;
+			height: 300px;
+			width: 33%;
+			h3 {
+				position: absolute;
+				right: 10px; top: 10px;
+				z-index: 1;
+				font-size: 24px;
+				color: #ccc;
+				color: rgba(255,255,255,.2);
+			}
+			.editor {
+				position: relative;
+				width: 100%;
+				height: 100%;
+			}
+		}
+	}
+}
+#editor-divider {
+	position: relative;
+	z-index: 101;
+	height: 3px;
+	background: #666;
+	cursor: ns-resize;
+}
+#preview-container {
+	position: absolute;
+	top: 343px;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	#preview-cover {
+		position: absolute;
+		display: none;
+		width: 100%;
+		height: 100%;
+	}
+	#preview {
+		width: 100%;
+		min-height: 300px;
+		height: 100%;
+		background: white;
+	}
+}
+
+
+
+
+
+
+

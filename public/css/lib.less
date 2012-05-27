@@ -1,0 +1,41 @@
+.border-radius(@radius: 5px) {
+	-moz-border-radius: @radius; 
+	-webkit-border-radius: @radius; 
+	border-radius: @radius;
+}
+
+.box-shadow(@val) {
+	-moz-box-shadow: @val; 
+	-webkit-box-shadow: @val; 
+	box-shadow: @val;
+}
+
+.box-sizing(@val: border-box) {
+	box-sizing: @val;
+	-ms-box-sizing: @val;
+	-moz-box-sizing: @val;
+	-webkit-box-sizing: @val;
+}
+
+.rotate(@val: 45deg) {
+	-moz-transform: rotate(@val);  /* FF3.5+ */
+	-o-transform: rotate(@val);  /* Opera 10.5 */
+	-webkit-transform: rotate(@val);  /* Saf3.1+, Chrome */
+	//-ms-transform: rotate(@val);  /* IE9 */ Breaks more than it helps...
+	transform: rotate(@val);
+
+	/* IE6-IE8 */
+	@radians: ~`parseInt("@{val}") * Math.PI * 2 / 360`;
+	@costheta: ~`Math.cos("@{radians}")`;
+	@sintheta: ~`Math.sin("@{radians}")`;
+	@negsintheta: ~`"@{sintheta}" * -1`;
+	filter: ~"progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand', M11=@{costheta}, M12=@{negsintheta}, M21=@{sintheta}, M22=@{costheta})";
+	zoom: 1;
+}
+
+.transition(@prop: color, @time: 1s, @style: ease-in){
+	-webkit-transition: @prop @time @style;
+	-moz-transition: @prop @time @style;  
+	-o-transition: @prop @time @style;  
+	transition: @prop @time @style;
+}
