@@ -43,7 +43,7 @@ html {
 	height: 40px;
 	overflow: hidden;
 	color: #e1e1e1;
-	background: #212121;
+	.gradient-background(#2d2d2d, #131313);
 	.transition(height, .5s);
 	&.showSettings { height: 250px; }
 	#navbar {
@@ -51,8 +51,13 @@ html {
 			float: left;
 			padding: 0 0 0 20px;
 			h1 {
-				font-size: 18px;
-				line-height: 2.1em;
+				font-size: 24px;
+				line-height: 1.5em;
+				color: rgb(220,220,220);
+				color: rgba(220,220,220,.6);
+				text-shadow: 1px 2px 5px #131313, 0 0 0 rgba(180,180,180,.7);
+				-webkit-mask-image: -webkit-linear-gradient(top, rgba(0, 0, 0, 1), rgba(0, 0, 0, .5));
+				mask-image: linear-gradient(top, rgba(0, 0, 0, 1), rgba(0, 0, 0, .5));
 			}
 		}
 		.navbar-right {

@@ -1,6 +1,4 @@
-//require(["js/ace/edit_session"], function(){ EditSession.prototype.$startWorker = function(){} });
-
-require(["js/ace/ace.js","js/ace/mode-html.js","js/ace/mode-css.js","js/ace/mode-javascript.js","js/ace/theme-twilight.js","/faye.js"], function(util) {
+(function(){
 	
 	// Ace
 	$(function(){
@@ -16,12 +14,13 @@ require(["js/ace/ace.js","js/ace/mode-html.js","js/ace/mode-css.js","js/ace/mode
 		js.getSession().setMode(new JavaScriptMode());
 		$.each([html,css,js], function(i,el){ el.setTheme("ace/theme/twilight"); });
 		//prefill
-		var $preview = $('iframe#preview').contents();
-		html.getSession().getDocument().setValue($preview.find('body').html());
-		css.getSession().getDocument().setValue($preview.find('head style').html());
-		//js.getSession().getDocument().setValue($preview.find('script').html());
-		js.getSession().getDocument().setValue("var hello = function(){ console.log('Hello World'); };");
-
+		setTimeout(function(){
+			var $preview = $('iframe#preview').contents();
+			html.getSession().getDocument().setValue($preview.find('body').html());
+			css.getSession().getDocument().setValue($preview.find('head style').html());
+				//js.getSession().getDocument().setValue($preview.find('script').html());
+			js.getSession().getDocument().setValue("var hello = function(){ console.log('Hello World'); };");
+		}, 100);
 
 
 		// Pub/Sub
@@ -85,4 +84,4 @@ require(["js/ace/ace.js","js/ace/mode-html.js","js/ace/mode-css.js","js/ace/mode
 
 
 	});
-});
+})();

@@ -18,8 +18,9 @@ Planned Features
 
 Uses
 --------
-* node 
+* node 0.6.11
 * express
 * faye
 * ace
 * less
+* jQuery
