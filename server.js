@@ -1,5 +1,6 @@
 var
 	express = require('express'),
+	dust = require('express-dust'),
 	faye = require('faye'),
 	bayeux = new faye.NodeAdapter({
 		mount:    '/faye',
@@ -40,6 +41,31 @@ var
 	}),
 	StartUp = db.model('StartUp', StartUpSchema),
 	startUp = new StartUp;
+
+
+
+
+//Sets up Global Variables to be used in all views
+//dust.makeBase({
+//    copy: '&copy; 2011 Nobody LLC'
+//});
+//
+//app.get('/', function(req, res, next) {
+//    res.render('index', {
+//        title: 'This is a test'
+//    });
+//});
+//
+//app.get('/partial', function(req, res, next) {
+//    res.partial('nav');
+//});
+//
+//app.get('/partial_html', function(req, res, next) {
+//    res.partial('nav', function(err, html) {
+//        res.send(html);
+//    });
+//});
+
 
 
 bayeux.attach(app);

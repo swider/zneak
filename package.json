@@ -1,13 +1,15 @@
 {
-  "name": "zneak",
-  "version": "0.0.1",
-  "engines": {
-    "node": "0.6.11",
-    "npm":  "1.1.1"
-  },
-  "dependencies": {
-    "express": "2.5.9",
-    "faye": "0.8.2",
-    "mongoose": "2.6.5"
-  }
+	"name": "zneak",
+	"version": "0.0.1",
+	"engines": {
+		"node": "0.6.11",
+		"npm":  "1.1.1"
+	},
+	"dependencies": {
+		"express": "2.5.9",
+		"faye": "0.8.2",
+		"mongoose": "2.6.5",
+		"dustjs-linkedin": "0.4.0",
+		"express-dust": "0.1.2"
+	}
 }
