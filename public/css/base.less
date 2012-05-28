@@ -63,6 +63,20 @@ html {
 		.navbar-right {
 			float: right;
 			padding: 10px 20px;
+			ul {
+				li {
+					display: inline-block;
+					padding-left: 15px;
+					font-size: 16px;
+					a {
+						color: #ddd;
+						text-decoration: none;
+						&:hover {
+							color: #bbf;
+						}
+					}
+				}
+			}
 		}
 	}
 	#settings-container {
@@ -73,6 +87,36 @@ html {
 }
 
 
+
+//--------------------
+// Non-Editor Pages
+//--------------------
+#container {
+	#container-inner {
+		width: 1000px;
+		margin: 40px auto 80px;
+	}
+	footer#footer {
+		width: 1000px;
+		margin: 40px auto 80px;
+		color: #666;
+		color: rgba(0,0,0,.4);
+		a {
+			color: #666;
+			color: rgba(0,0,0,.4);
+			&:hover {
+				color: #555;
+				color: rgba(0,0,0,.5);
+			}
+		}
+	}
+}
+
+
+
+//--------------------
+// Editor Page
+//--------------------
 #editor-container {
 	display: table;
 	width: 100%;

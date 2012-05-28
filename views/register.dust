@@ -1,15 +1,16 @@
 {>"layouts/main"/}
 
-{<title}Login{/title}
+{<title}Register{/title}
 
 {<html_body}
-	<p>You must login beore going to {next}</p>
+	<p>Join zneak!</p>
 	<form method="post">
-		<input type="hidden" name="next" value="{next}" />
 		<label>Email</label>
 		<input type="email" name="email" />
 		<label>Password</label>
 		<input type="password" name="password" />
-		<input type="submit" value="Login" />
+		<label>Display Name</label>
+		<input type="text" name="username" />
+		<input type="submit" value="Create Account" />
 	</form>
 {/html_body}

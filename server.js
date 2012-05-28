@@ -1,6 +1,7 @@
 var
 	express = require('express'),
 	memStore = express.session.MemoryStore,
+	mongoose = require('mongoose'),
 	dust = require('express-dust'),
 	crypto = require('crypto'),
 	faye = require('faye'),
@@ -8,20 +9,13 @@ var
 		mount:    '/faye',
 		timeout:  45
 	}),
-
 	app = express.createServer();
 
 
-	app.dynamicHelpers({
-		session: function(req, res){
-			return req.session;
-		},
-		flash: function(req, res){
-			var msg = req.flash();
-			return msg;
-		}
-	});
 
+//--------------
+// Config
+//--------------
 var
 	env = "dev",
 	mongoStr = "mongodb://localhost/zneak";
@@ -44,8 +38,56 @@ app.configure(function(){
 	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
+app.dynamicHelpers({
+	session: function(req, res){
+		return req.session;
+	},
+	flash: function(req, res){
+		var msg = req.flash();
+		return msg;
+	}
+});
+
+dust.makeBase({
+	copy: '&copy; 2012 <a href="http://nickswider.com/">Nick Swider</a>. All Rights reserved.'
+});
+
+var
+	db = mongoose.createConnection(mongoStr),
+	Schema = mongoose.Schema;
 
 
+
+//-------------------
+// Schemas & Models
+//-------------------
+	var
+		StartUpSchema = new Schema({
+			date: { type: Date, default: Date.now },
+			env: { type: String, default: env },
+		}),
+		StartUp = db.model('StartUp', StartUpSchema),
+		startUp = new StartUp;
+
+	var UserSchema = new Schema({
+		email: { type: String, required: true, index: { unique: true } },
+		username: { type: String },
+		password: { type: String },
+		registered: { type: Date },
+		lastchanged: { type: Date},
+		lastlogin: { type: Date }
+	});
+	UserSchema.pre('save', function(next, done){
+		this.lastchanged = new Date().toISOString();
+		next();
+	});
+	var User = db.model('User', UserSchema);
+
+
+
+//-------------------
+// Authentication
+//-------------------
 function requiresLogin(req, res, next){
 	if(req.session.user){
 		next();
@@ -54,92 +96,55 @@ function requiresLogin(req, res, next){
 	}
 }
 
+function hash(msg, salt) {
+	return crypto
+		.createHmac('sha256', salt)
+		.update(msg)
+		.digest('hex');
+}
+function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); };
+
+function authenticate(email, password, callback){
+	//console.log('Authenticating %s:%s', email, pass);
+	User.findOne({ email: email}, function (err, doc){
+  	if(err){
+			return callback('no such user: '+email, null);
+  	}else{
+  		if(doc.password == passHash(password))
+				return callback(null, doc);
+				return callback('invalid password', null);
+  	}
+	});
+}
+function register(username, email, password){
+	user = new User;
+	user.username = username;
+	user.email = email;
+	user.password = passHash(password);
+	user.registered = new Date().toISOString();
+	user.save();
+	return user;
+}
+var users = {
+	'nick@swider.com': {
+		username: 'nick',
+		email: 'nick@swider.com',
+		password: passHash('foo')
+	}
+};
 
 
-var
-	mongoose = require('mongoose'),
-	db = mongoose.createConnection(mongoStr),
-	Schema = mongoose.Schema,
-	StartUpSchema = new Schema({
-		date: { type: Date, default: Date.now },
-		env: { type: String, default: env },
-	}),
-	StartUp = db.model('StartUp', StartUpSchema),
-	startUp = new StartUp;
 
+//-------------------
+// Routes
+//-------------------
 
-
-
-//Sets up Global Variables to be used in all views
-dust.makeBase({
-	copy: '&copy; 2011 Nobody LLC'
-});
-
+//=== General
 app.get('/', function(req, res, next) {
 	res.render('index', {
 		title: 'This is a test'
 	});
 });
-
-app.get('/login', function(req, res, next) {
-	res.render('login', { next: req.query.next || '/memberHome' });
-});
-app.post('/login', function(req, res, next) {
-	var user = authenticate(req.body.username, req.body.password, function(err, user){
-    if (user) {
-      // Regenerate session when signing in
-      // to prevent fixation 
-      req.session.regenerate(function(){
-        // Store the user's primary key 
-        // in the session store to be retrieved,
-        // or in this case the entire user object
-        req.session.user = user;
-        req.session.user = user;
-				res.redirect(req.body.next+'?fromLogin=true');
-      });
-    } else {
-      req.flash("warn", "Invalid credentials.");
-			res.redirect('/login?next='+req.body.next);
-    }
-  });
-});
-app.get('/logout', function(req, res){
-  // destroy the user's session to log them out
-  // will be re-created next request
-  req.session.destroy(function(){
-    res.redirect('/');
-  });
-});
-
-var users = {
-  tj: {
-      name: 'tj'
-    , salt: 'randomly-generated-salt'
-    , pass: hash('foo', 'randomly-generated-salt')
-  }
-};
-
-// Used to generate a hash of the plain-text password + salt
-function hash(msg, key) {
-  return crypto
-    .createHmac('sha256', key)
-    .update(msg)
-    .digest('hex');
-}
-
-// Authenticate using our plain-object database of doom!
-function authenticate(name, pass, fn) {
-  if (!module.parent) console.log('authenticating %s:%s', name, pass);
-  var user = users[name];
-  // query the db for the given username
-  if (!user) return fn(new Error('cannot find user'));
-  // apply the same algorithm to the POSTed password, applying
-  // the hash against the pass / salt, if there is a match we
-  // found the user
-  if (user.pass == hash(pass, user.salt)) return fn(null, user);
-  // Otherwise password is invalid
-  fn(new Error('invalid password'));
-}
 
 app.get('/test', requiresLogin, function(req, res, next) {
 	res.render('index', {
@@ -147,10 +152,57 @@ app.get('/test', requiresLogin, function(req, res, next) {
 	});
 });
 
+app.get('/memberHome', requiresLogin, function(req, res, next) {
+	res.render('index', {
+		title: 'Member Home'
+	});
+});
+
+
+//=== Auth
+app.get('/login', function(req, res, next) {
+	res.render('login', { next: req.query.next || '/memberHome' });
+});
+app.post('/login', function(req, res, next) {
+	var user = authenticate(req.body.email, req.body.password, function(err, user){
+		if (user) {
+			req.session.regenerate(function(){
+				req.session.user = user;
+				res.redirect(req.body.next+'?fromLogin=true');
+			});
+		} else {
+			req.flash("warn", err);
+			res.redirect('/login?next='+req.body.next);
+		}
+	});
+});
+app.get('/logout', function(req, res){
+	req.session.destroy(function(){
+		res.redirect('/');
+	});
+});
+
+app.get('/register', function(req, res, next) {
+	res.render('register', {});
+});
+app.post('/register', function(req, res, next) {
+	var user = register(req.body.username, req.body.email, req.body.password);
+	if(typeof user == "string"){
+		req.flash("warn", user);
+		res.redirect('/memberHome');
+	}else{
+		req.session.regenerate(function(){
+			req.session.user = user;
+			res.redirect(req.body.next+'?fromLogin=true');
+		});
+	}
+});
+
+
+//=== Helper
 app.get('/partial', function(req, res, next) {
 	res.partial('nav');
 });
-
 app.get('/partial_html', function(req, res, next) {
 	res.partial('nav', function(err, html) {
 		res.send(html);
@@ -159,6 +211,9 @@ app.get('/partial_html', function(req, res, next) {
 
 
 
+//-------------------
+// Start Server
+//-------------------
 bayeux.attach(app);
 var port = process.env.PORT || 3000;
 app.listen(port, function() {
