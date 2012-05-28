@@ -25,7 +25,6 @@ Uses
 * less
 * jQuery
 * heroku
-* mongoDB
-* mongoose
-* mongoLab
-* dust
+* mongoDB (mongoose & mongoLab)
+* dust (express-dust)
+* crypto

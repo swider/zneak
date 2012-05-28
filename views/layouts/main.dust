@@ -5,6 +5,14 @@
     <title>{+title}My Site{/title}</title>
 </head>
 <body>
+
+{#flash}
+<div style="background:#f66">
+	<p>{warn}</p>
+</div>
+{/flash}
+
+
 {>"partials/nav"/}
 
 {+html_body}
