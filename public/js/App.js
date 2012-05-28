@@ -44,7 +44,10 @@
 		};
 
 		$(document).on('body', 'keyup.Ctrl_s', sendUpdate);
-		$("header h1").click(sendUpdate);
+		$("#run").click(sendUpdate);
+		$("#save").click(function(){
+			console.log('do save');
+		});
 
 
 
@@ -77,7 +80,7 @@
 
 
 		// Settings
-		$("#toggleSettings").click(function(){
+		$("#settings").click(function(){
 			$("#header-wrapper").toggleClass('showSettings');
 			return false;
 		});

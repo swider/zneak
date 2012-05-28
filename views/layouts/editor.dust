@@ -16,6 +16,9 @@
 		<header id="navbar">
 			<div class="navbar-left">
 				<h1>zneak</h1>
+				<a id="run" href="#">Run</a>
+				<a id="save" href="#">Save</a>
+				<a id="settings" href="#">Settings</a>
 			</div>
 			{#flash}
 			<div style="background:#f66">
@@ -24,7 +27,6 @@
 			{/flash}
 			<div class="navbar-right">
 				{>"partials/nav"/}
-				<a href="#" id="toggleSettings">Settings</a>
 			</div>
 		</header>
 		<section id="settings-container">

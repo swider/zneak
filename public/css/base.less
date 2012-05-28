@@ -21,6 +21,29 @@ ol, ul { list-style: none; }
 /* tables still need 'cellspacing="0"' in the markup */
 table { border-collapse: collapse; border-spacing: 0; }
 
+
+/* ---------------------
+				 UTILS
+--------------------- */
+@btn_blue: #55b;
+@btn_green: #395;
+@btn_red: #b35;
+@btn_black: #333;
+.btn(@color: @btn_blue){
+	display: inline-block;
+	padding: 4px 16px;
+	color: #fff;
+	text-shadow: 0 1px 1px darken(@color, 20%);
+	text-decoration: none;
+	.gradient-background(lighten(@color, 8%), darken(@color, 8%));
+	border: 1px solid @color;
+	.border-radius(2px);
+	.box-shadow(0 2px 2px #000);
+	&:hover {
+		.gradient-background(lighten(@color, 2%), darken(@color, 12%));
+	}
+}
+
 /* clearfix */
 .cf:before, .cf:after { content:""; display:table; }
 .cf:after { clear:both; }
@@ -51,6 +74,8 @@ html {
 			float: left;
 			padding: 0 0 0 20px;
 			h1 {
+				display: inline-block;
+				margin-right: 50px;
 				font-size: 24px;
 				line-height: 1.5em;
 				color: rgb(220,220,220);
@@ -59,11 +84,21 @@ html {
 				-webkit-mask-image: -webkit-linear-gradient(top, rgba(0, 0, 0, 1), rgba(0, 0, 0, .5));
 				mask-image: linear-gradient(top, rgba(0, 0, 0, 1), rgba(0, 0, 0, .5));
 			}
+			#run {
+				.btn(@btn_green);
+			}
+			#save {
+				.btn(@btn_blue);
+			}
+			#settings {
+				.btn(@btn_black);
+			}
 		}
 		.navbar-right {
 			float: right;
 			padding: 10px 20px;
 			ul {
+				display: inline-block;
 				li {
 					display: inline-block;
 					padding-left: 15px;
