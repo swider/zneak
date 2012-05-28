@@ -61,6 +61,11 @@
 		<iframe id="preview" src="/preview"></iframe>
 	</section>
 
+	<script>
+		window.zneak = {
+			pageId: "{pageId}"
+		};
+	</script>
 	<script src="/js/ace/ace.js"></script>
 	<script src="/js/ace/mode-html.js"></script>
 	<script src="/js/ace/mode-css.js"></script>

@@ -46,7 +46,17 @@
 		$(document).on('body', 'keyup.Ctrl_s', sendUpdate);
 		$("#run").click(sendUpdate);
 		$("#save").click(function(){
-			console.log('do save');
+			$.ajax({
+				type: "POST",
+				dataType: "json",
+				url: "/"+zneak.pageId+"/save/",
+				success: function(data){
+					console.warn("Saved", data);
+				},
+				error: function(err){
+					console.error("Save Error", err);
+				}
+			});
 		});
 
 

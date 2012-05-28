@@ -100,8 +100,8 @@ var
 	var User = db.model('User', UserSchema);
 
 	var DocSchema = new Schema({
-		did: { type: String, required: true, index: { unique: true } },
-		pid: { type: String },
+		docId: { type: String, required: true, index: { unique: true } },
+		pageId: { type: String },
 		user: { type: String },
 		created: { type: Date },
 		lastchanged: { type: Date},
@@ -116,7 +116,7 @@ var
 	var Doc = db.model('Doc', DocSchema);
 
 	var PageSchema = new Schema({
-		pid: { type: String, required: true, index: { unique: true } },
+		pageId: { type: String, required: true, index: { unique: true } },
 		user: { type: String },
 		created: { type: Date },
 		lastchanged: { type: Date },
@@ -131,7 +131,7 @@ var
 
 
 //-------------------
-// Authentication
+// Auth Helpers
 //-------------------
 function requiresLogin(req, res, next){
 	if(req.session.user){
@@ -166,6 +166,19 @@ function register(username, email, password){
 
 
 //-------------------
+// Page Helpers
+//-------------------
+function insertPage(pageId){
+	page = new Page;
+	page.pageId = pageId;
+	page.created = new Date().toISOString();
+	page.save();
+	return page;
+}
+
+
+
+//-------------------
 // Authentication
 //-------------------
 function hash(msg, salt) {
@@ -175,7 +188,7 @@ function hash(msg, salt) {
 		.digest('hex');
 }
 function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); };
-function pageHash(pass) { return hash(pass, "zneak0ncf05bw26").substr(0,7); };
+function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,7); };
 
 
 
@@ -189,9 +202,43 @@ app.get('/preview', function(req, res, next) {
 		title: 'This is a preview'
 	});
 });
-app.get(/^\/([a-zA-Z0-9]{8})?\/?(?!.)/, function(req, res, next) {
+app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
+	var pageId = req.params[0];
+	if(pageId){
+		
+	}else{
+		pageId = pageHash('zneak'+new Date().getTime()*Math.random());
+	}
 	res.render('editor', {
-		title: 'This is an editor'
+		pageId: pageId
+	});
+});
+app.post(/^\/([a-zA-Z0-9]{7})\/save/, function(req, res, next) {
+	var pageId = req.params[0];
+	console.log('Saving %s', pageId);
+	Page.findOne({ pageId: pageId}, function (err, doc){
+		if(err){
+			if (req.accepts('json')) {
+				res.send({ error: 'invalid paeId' });
+				return;
+			}
+			res.type('txt').send('invalid paeId');
+		}else{
+			if(doc){
+				if (req.accepts('json')) {
+					res.send({ success: 'update @doc' });
+					return;
+				}
+				res.type('txt').send('update @doc');
+			}else{
+				var page = insertPage(pageId);
+				if (req.accepts('json')) {
+					res.send({ success: 'insert', page: page });
+					return;
+				}
+				res.type('txt').send('insert');
+			}
+		}
 	});
 });
 
