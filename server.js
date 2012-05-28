@@ -35,6 +35,22 @@ app.configure(function(){
 	app.use(express.session({ secret: 'zneak170154', store: memStore({reapInterval: 60*60*24*7})}));
 	app.use(app.router);
 	app.use(express.static(__dirname + '/public'));
+	app.use(function(req, res, next){
+		if (req.accepts('html')) {
+			res.status(404);
+			res.render('404', { url: req.url });
+			return;
+		}
+		if (req.accepts('json')) {
+			res.send({ error: 'Not found' });
+			return;
+		}
+		res.type('txt').send('Not found');
+	});
+	app.use(function(err, req, res, next){
+		res.status(err.status || 500);
+		res.render('500', { error: err });
+	});
 	app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
@@ -83,6 +99,35 @@ var
 	});
 	var User = db.model('User', UserSchema);
 
+	var DocSchema = new Schema({
+		did: { type: String, required: true, index: { unique: true } },
+		pid: { type: String },
+		user: { type: String },
+		created: { type: Date },
+		lastchanged: { type: Date},
+		name: { type: String },
+		type: { type: String },
+		content: { type: String }
+	});
+	DocSchema.pre('save', function(next, done){
+		this.lastchanged = new Date().toISOString();
+		next();
+	});
+	var Doc = db.model('Doc', DocSchema);
+
+	var PageSchema = new Schema({
+		pid: { type: String, required: true, index: { unique: true } },
+		user: { type: String },
+		created: { type: Date },
+		lastchanged: { type: Date },
+		documents: [Doc]
+	});
+	PageSchema.pre('save', function(next, done){
+		this.lastchanged = new Date().toISOString();
+		next();
+	});
+	var Page = db.model('Page', PageSchema);
+
 
 
 //-------------------
@@ -96,24 +141,16 @@ function requiresLogin(req, res, next){
 	}
 }
 
-function hash(msg, salt) {
-	return crypto
-		.createHmac('sha256', salt)
-		.update(msg)
-		.digest('hex');
-}
-function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); };
-
 function authenticate(email, password, callback){
 	//console.log('Authenticating %s:%s', email, pass);
 	User.findOne({ email: email}, function (err, doc){
-  	if(err){
+		if(err){
 			return callback('no such user: '+email, null);
-  	}else{
-  		if(doc.password == passHash(password))
+		}else{
+			if(doc.password == passHash(password))
 				return callback(null, doc);
 				return callback('invalid password', null);
-  	}
+		}
 	});
 }
 function register(username, email, password){
@@ -125,13 +162,20 @@ function register(username, email, password){
 	user.save();
 	return user;
 }
-var users = {
-	'nick@swider.com': {
-		username: 'nick',
-		email: 'nick@swider.com',
-		password: passHash('foo')
-	}
-};
+
+
+
+//-------------------
+// Authentication
+//-------------------
+function hash(msg, salt) {
+	return crypto
+		.createHmac('sha256', salt)
+		.update(msg)
+		.digest('hex');
+}
+function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); };
+function pageHash(pass) { return hash(pass, "zneak0ncf05bw26").substr(0,7); };
 
 
 
@@ -140,9 +184,14 @@ var users = {
 //-------------------
 
 //=== General
-app.get('/', function(req, res, next) {
-	res.render('index', {
-		title: 'This is a test'
+app.get('/preview', function(req, res, next) {
+	res.render('preview', {
+		title: 'This is a preview'
+	});
+});
+app.get(/^\/([a-zA-Z0-9]{8})?\/?(?!.)/, function(req, res, next) {
+	res.render('editor', {
+		title: 'This is an editor'
 	});
 });
 

@@ -1,0 +1,7 @@
+{>"layouts/editor"/}
+
+{<title}Editor{/title}
+
+{!
+	Maybe construct the options here?
+!}

@@ -1,0 +1,7 @@
+{>"layouts/preview"/}
+
+{<title}Preview{/title}
+
+{!
+	Maybe construct the page here?
+!}
