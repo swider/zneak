@@ -177,8 +177,10 @@ function insertPage(pageId, docs){
 	page.documents = docs;
 	page.save(function(err){
 		if(err){
-			console.log('PAGE SAVE ERROR');
+			console.log('PAGE INSERT ERROR');
 			console.log(err);
+		}else{
+			//console.log('Inserted new page');
 		}
 	});
 	return page;
@@ -195,11 +197,35 @@ function insertDoc(pageId, o){
 	doc.content = o.content;
 	doc.save(function(err){
 		if(err){
-			console.log('DOC SAVE ERROR');
+			console.log('DOC INSERT ERROR');
 			console.log(err);
+		}else{
+			//console.log('Inserted new doc');
 		}
 	});
 	return doc;
+}
+function makeNewPage(){
+	return {
+		pageId: newPageHash(),
+		docs: [
+			{
+				type: "html",
+				docId: newDocHash(),
+				content: "<h2>HTML</h2>"
+			},
+			{
+				type: "css",
+				docId: newDocHash(),
+				content: "#css { color: red; }"
+			},
+			{
+				type: "js",
+				docId: newDocHash(),
+				content: "console.log('hello world');"
+			}
+		]
+	};
 }
 
 
@@ -215,8 +241,9 @@ function hash(msg, salt) {
 }
 function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); }
 function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,7); }
+function newPageHash() { return pageHash('zneakP'+new Date().getTime()*Math.random()); }
 function docHash(pageInfo) { return hash(pageInfo, "zneak0son68dk52").substr(0,10); }
-function newDocHash() { return docHash('zneak'+new Date().getTime()*Math.random()); }
+function newDocHash() { return docHash('zneakD'+new Date().getTime()*Math.random()); }
 
 
 
@@ -228,7 +255,7 @@ function newDocHash() { return docHash('zneak'+new Date().getTime()*Math.random(
 app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
 	var pageId = req.params[0];
 	if(pageId){
-		console.log('Fetching pageId '+ pageId);
+		console.log('Fetching page '+ pageId);
 		Page.findOne({ pageId: pageId}, function (err, page){
 			if(err){
 				console.log('--But it\'s invalid');
@@ -236,7 +263,6 @@ app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
 				pageId = pageHash('zneak'+new Date().getTime()*Math.random());
 			}else{
 				if(page){
-					console.log('--And it exists');
 					var data = { 
 						pageId: pageId,
 						docs: []
@@ -258,34 +284,15 @@ app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
 						res.render('editor', data);
 					});
 				}else{
-					console.log('--But it wasn\'t found');
+					console.log('--But it wasn\'t found, createing new page');
 					req.flash("warn", "Page not found, creating new page");
+					es.render('editor', makeNewPage());
 				}
 			}
 		});
 	}else{
 		console.log('Creating new page');
-		pageId = pageHash('zneak'+new Date().getTime()*Math.random());
-		res.render('editor', {
-			pageId: pageId,
-			docs: [
-				{
-					type: "html",
-					docId: newDocHash(),
-					content: "<h2>HTML</h2>"
-				},
-				{
-					type: "css",
-					docId: newDocHash(),
-					content: "#css { color: red; }"
-				},
-				{
-					type: "js",
-					docId: newDocHash(),
-					content: "console.log('hello world');"
-				}
-			]
-		});
+		res.render('editor', makeNewPage());
 	}
 });
 app.get(/^\/([a-zA-Z0-9]{7})\/preview\/?(?!.)/, function(req, res, next) {
@@ -327,7 +334,6 @@ app.post(/^\/([a-zA-Z0-9]{7})\/save\/?(?!.)/, function(req, res, next) {
 					var doc = insertDoc(pageId, docArr[i]);
 					docs.push(doc._id);
 				};
-				console.log(docs);
 				var page = insertPage(pageId, docs);
 				if (req.accepts('json')) {
 					res.send({ success: 'insert', page: page });
