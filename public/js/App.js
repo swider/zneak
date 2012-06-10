@@ -1,7 +1,14 @@
 (function(){
-	
-	// Ace
 	$(function(){
+		
+		// Page Info
+		var pageId = zneak.page.pageId;
+		$.each(zneak.page.docs, function(i, el){
+
+		});
+
+
+		// Ace
 		var
 			html = ace.edit("html"),
 			css = ace.edit("css"),
@@ -22,6 +29,22 @@
 			js.getSession().getDocument().setValue("var hello = function(){ console.log('Hello World'); };");
 		}, 100);
 
+		//html.commands.addCommands([{
+		//	name: "gotoline",
+		//	bindKey: {win: "Ctrl-G", mac: "Command-G"},
+		//	exec: function(editor, line) {
+		//		console.log('ctrl-g detected');
+		//	},
+		//	readOnly: true
+		//}]);
+
+		css.setShowPrintMargin(false);
+		css.setShowInvisibles(true);
+		//css.setShowFoldWidgets(true);
+		//css.session.setFoldStyle("markbegin");
+		//var MultiSelect = require("ace/multi_select").MultiSelect;
+		//new MultiSelect(css);
+
 
 		// Pub/Sub
 		var client = new Faye.Client('/faye', {
@@ -37,19 +60,34 @@
 			//var publication = client.publish('/page/js', {js: $(this).val()});
 		});
 
-		var sendUpdate = function(){ 
-			var pubHTML = client.publish('/page/html', { html: html.getSession().getDocument().getValue() });
-			var pubCSS = client.publish('/page/css', { css: css.getSession().getDocument().getValue() });
-			var pubJS = client.publish('/page/js', { js: js.getSession().getDocument().getValue() });
+		var sendUpdate = function(e){
+			var pubHTML = client.publish('/'+pageId+'/html', { html: html.getSession().getDocument().getValue() });
+			var pubCSS = client.publish('/'+pageId+'/css', { css: css.getSession().getDocument().getValue() });
+			var pubJS = client.publish('/'+pageId+'/js', { js: js.getSession().getDocument().getValue() });
+			e.preventDefault();
 		};
 
 		$(document).on('body', 'keyup.Ctrl_s', sendUpdate);
 		$("#run").click(sendUpdate);
-		$("#save").click(function(){
+		$("#save").click(function(e){
+			var data = {
+				docs: {
+					html: {
+						content: html.getSession().getDocument().getValue()
+					},
+					css: {
+						content: css.getSession().getDocument().getValue()
+					},
+					js: {
+						content: js.getSession().getDocument().getValue()
+					}
+				}
+			};
 			$.ajax({
 				type: "POST",
 				dataType: "json",
-				url: "/"+zneak.pageId+"/save/",
+				data: data,
+				url: "/"+pageId+"/save/",
 				success: function(data){
 					console.warn("Saved", data);
 				},
@@ -57,6 +95,8 @@
 					console.error("Save Error", err);
 				}
 			});
+			history.pushState({}, "", "/"+pageId);
+			e.preventDefault();
 		});
 
 
@@ -68,7 +108,7 @@
 			startt = 0,
 			resize = false,
 			$cols = $('.editor-col'),
-			$previewContainer = $('#preview-container')
+			$previewContainer = $('#preview-container'),
 			$resizeCover = $('#preview-cover');
 		$('#editor-divider').mousedown(function(e){
 			starty = e.pageY;
@@ -90,9 +130,9 @@
 
 
 		// Settings
-		$("#settings").click(function(){
+		$("#settings").click(function(e){
 			$("#header-wrapper").toggleClass('showSettings');
-			return false;
+			e.preventDefault();
 		});
 
 

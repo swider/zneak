@@ -24,7 +24,7 @@ app.configure('development', function(){
 });
 app.configure('production', function(){
 	console.log("Configuring for production");
-	env = "prod",
+	env = "prod";
 	mongoStr = "mongodb://zneak_prod:jd78Fns$yv@ds033297.mongolab.com:33297/heroku_app4856593";
 	app.use(express.logger());
 	// TODO : add more analytics middleware here
@@ -80,10 +80,10 @@ var
 	var
 		StartUpSchema = new Schema({
 			date: { type: Date, default: Date.now },
-			env: { type: String, default: env },
+			env: { type: String, default: env }
 		}),
 		StartUp = db.model('StartUp', StartUpSchema),
-		startUp = new StartUp;
+		startUp = new StartUp();
 
 	var UserSchema = new Schema({
 		email: { type: String, required: true, index: { unique: true } },
@@ -116,7 +116,7 @@ var
 	var Doc = db.model('Doc', DocSchema);
 
 	var PageSchema = new Schema({
-		pageId: { type: String, required: true, index: { unique: true } },
+		pageId: { type: String },
 		user: { type: String },
 		created: { type: Date },
 		lastchanged: { type: Date },
@@ -154,7 +154,7 @@ function authenticate(email, password, callback){
 	});
 }
 function register(username, email, password){
-	user = new User;
+	user = new User();
 	user.username = username;
 	user.email = email;
 	user.password = passHash(password);
@@ -169,10 +169,19 @@ function register(username, email, password){
 // Page Helpers
 //-------------------
 function insertPage(pageId){
-	page = new Page;
+	page = new Page();
 	page.pageId = pageId;
 	page.created = new Date().toISOString();
-	page.save();
+	page.lastchanged = new Date().toISOString();
+	page.user = "test";
+	page.documents = [];
+	//page.save();
+	page.save(function(err){
+		if(err){
+			console.log('SAVE ERROR');
+			console.log(err);
+		}
+	});
 	return page;
 }
 
@@ -187,8 +196,8 @@ function hash(msg, salt) {
 		.update(msg)
 		.digest('hex');
 }
-function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); };
-function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,7); };
+function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); }
+function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,7); }
 
 
 
@@ -197,32 +206,75 @@ function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,
 //-------------------
 
 //=== General
-app.get('/preview', function(req, res, next) {
-	res.render('preview', {
-		title: 'This is a preview'
-	});
-});
 app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
+	console.log('.');
 	var pageId = req.params[0];
 	if(pageId){
-		
+		console.log('Fetching pageId '+ pageId);
+		Page.findOne({ pageId: pageId}, function (err, doc){
+			if(err){
+				console.log('But it\'s invalid');
+				req.flash("warn", "Invalid pageId, creating new page");
+				pageId = pageHash('zneak'+new Date().getTime()*Math.random());
+			}else{
+				if(doc){
+					console.log('And it exists');
+					res.render('editor', {
+						pageId: pageId,
+						docs: [
+							{
+								type: "html",
+								docId: "123abc"
+							},
+							{
+								type: "css",
+								docId: "456def"
+							}
+						]
+					});
+				}else{
+					console.log('But it wasn\'t found');
+					req.flash("warn", "Page not found, creating new page");
+				}
+			}
+		});
 	}else{
+		console.log('Creating new page');
 		pageId = pageHash('zneak'+new Date().getTime()*Math.random());
 	}
 	res.render('editor', {
+		pageId: pageId,
+		docs: [
+			{
+				type: "html",
+				docId: "123abc",
+				content: "<h2>HTML</h2>"
+			},
+			{
+				type: "css",
+				docId: "456def",
+				content: "#css { color: red; }"
+			}
+		]
+	});
+});
+app.get(/^\/([a-zA-Z0-9]{7})\/preview\/?(?!.)/, function(req, res, next) {
+	var pageId = req.params[0];
+	res.render('preview', {
+		title: 'This is a preview',
 		pageId: pageId
 	});
 });
-app.post(/^\/([a-zA-Z0-9]{7})\/save/, function(req, res, next) {
+app.post(/^\/([a-zA-Z0-9]{7})\/save\/?(?!.)/, function(req, res, next) {
 	var pageId = req.params[0];
-	console.log('Saving %s', pageId);
+	console.log('Saving '+pageId);
 	Page.findOne({ pageId: pageId}, function (err, doc){
 		if(err){
 			if (req.accepts('json')) {
-				res.send({ error: 'invalid paeId' });
+				res.send({ error: 'invalid pageId' });
 				return;
 			}
-			res.type('txt').send('invalid paeId');
+			res.type('txt').send('invalid pageId');
 		}else{
 			if(doc){
 				if (req.accepts('json')) {
@@ -242,7 +294,7 @@ app.post(/^\/([a-zA-Z0-9]{7})\/save/, function(req, res, next) {
 	});
 });
 
-app.get('/test', requiresLogin, function(req, res, next) {
+app.get('/account', requiresLogin, function(req, res, next) {
 	res.render('index', {
 		title: 'This is a login test'
 	});
