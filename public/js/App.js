@@ -20,7 +20,7 @@
 			}
 			editor.setShowPrintMargin(false);
 			editor.setShowInvisibles(true);
-			editor.getSession().getDocument().setValue(doc.content);
+			editor.getSession().getDocument().setValue(decodeURI(doc.content));
 			editors[doc.type] = editor;
 		});
 
@@ -58,9 +58,14 @@
 		});
 
 		var sendUpdate = function(e){
-			var pubHTML = client.publish('/'+pageId+'/html', { html: editors['html'].getSession().getDocument().getValue() });
-			var pubCSS = client.publish('/'+pageId+'/css', { css: editors['css'].getSession().getDocument().getValue() });
-			var pubJS = client.publish('/'+pageId+'/js', { js: editors['js'].getSession().getDocument().getValue() });
+			$.each(zneak.page.docs, function(i, doc){
+				client.publish('/doc/'+doc.docId, {
+					type: doc.type,
+					docId: doc.docId,
+					content: encodeURI(editors[doc.type].getSession().getDocument().getValue()),
+					pageId: pageId
+				});
+			});
 			e.preventDefault();
 		};
 
@@ -72,7 +77,7 @@
 				data.docs.push({
 					type: el.type,
 					docId: el.docId,
-					content: editors[el.type].getSession().getDocument().getValue()
+					content: encodeURI(editors[el.type].getSession().getDocument().getValue())
 				});
 			});
 			$.ajax({

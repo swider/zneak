@@ -1,14 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<style>body {
-	background: blanchedalmond;
-}
-h1 {
-	font-family: sans-serif;
-	color: #63a;
-}
-</style>
+	<style>
+		{content.css|s}
+	</style>
 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 	<script src="/faye.js"></script>
 	<script type="text/javascript">
@@ -16,23 +11,26 @@ h1 {
 			timeout: 120
 		});
 
-		client.subscribe('/{pageId}/css', function(message) {
-			$("head style").html(message.css);
-		});
+		var update = [];
+		update['html'] = function(message) {
+			$("html body").html(decodeURI(message.content));
+		};
+		update['css'] = function(message) {
+			$("head style").html(decodeURI(message.content));
+		};
+		update['js'] = function(message) {
+			window.location.reload();
+		};
 
-		client.subscribe('/{pageId}/js', function(message) {
-			//$("head style").html(message.css);
-			//reload the page, load an external js file generated from the server
-		});
-
-		client.subscribe('/{pageId}/html', function(message) {
-			$("body").html(message.html);
-		});
+		{#docs}
+			client.subscribe('/doc/{docId}', update['{type}']);{~n}
+		{/docs}
+	</script>
+	<script>
+		{content.js|s}
 	</script>
 </head>
-<body>{+content.html}<h1>Welcome to Zneak!</h1>
-<p>
-	Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-</p>{/content.html}
+<body>
+	{content.html|s}
 </body>
 </html>

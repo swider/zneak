@@ -10,7 +10,7 @@ var
 		timeout:  45
 	}),
 	app = express.createServer();
-
+bayeux.attach(app);
 
 
 //--------------
@@ -107,7 +107,8 @@ var
 		lastchanged: { type: Date},
 		name: { type: String },
 		type: { type: String },
-		content: { type: String }
+		content: { type: String },
+		temp: { type: String }
 	});
 	DocSchema.pre('save', function(next, done){
 		this.lastchanged = new Date().toISOString();
@@ -195,6 +196,7 @@ function insertDoc(pageId, o){
 	doc.name = "whatever";
 	doc.type = o.type;
 	doc.content = o.content;
+	doc.temp = o.content;
 	doc.save(function(err){
 		if(err){
 			console.log('DOC INSERT ERROR');
@@ -206,25 +208,34 @@ function insertDoc(pageId, o){
 	return doc;
 }
 function makeNewPage(){
-	return {
-		pageId: newPageHash(),
-		docs: [
+	var
+		pageId = newPageHash(),
+		docArr = [
 			{
 				type: "html",
 				docId: newDocHash(),
-				content: "<h2>HTML</h2>"
+				content: encodeURI("<h2>Welcome to Zneak</h2>\n")
 			},
 			{
 				type: "css",
 				docId: newDocHash(),
-				content: "#css { color: red; }"
+				content: encodeURI("h2 {\n	color: rgb(25,25,112);\n}\n")
 			},
 			{
 				type: "js",
 				docId: newDocHash(),
-				content: "console.log('hello world');"
+				content: encodeURI("function sayHello() {\n	console.log('hello world');\n}\n")
 			}
-		]
+		],
+		docs = [];
+	for(var i=0; i < docArr.length; i++){
+		var doc = insertDoc(pageId, docArr[i]);
+		docs.push(doc._id);
+	};
+	var page = insertPage(pageId, docs);
+	return {
+		pageId: pageId,
+		docs: docArr
 	};
 }
 
@@ -244,6 +255,34 @@ function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,
 function newPageHash() { return pageHash('zneakP'+new Date().getTime()*Math.random()); }
 function docHash(pageInfo) { return hash(pageInfo, "zneak0son68dk52").substr(0,10); }
 function newDocHash() { return docHash('zneakD'+new Date().getTime()*Math.random()); }
+
+
+
+
+//-------------------
+// Track Doc Changes
+//-------------------
+bayeux.getClient().subscribe('/doc/*', function(message) {
+  console.log('[msg] '+message.pageId+'/'+message.type+'('+message.docId+')');
+  //console.log(message.content);
+  //if(message.type == 'js'){
+  	var
+  		conditions = { docId: message.docId },
+  		update = { $set: { temp: message.content } },
+  		options = { multi: false },
+  		callback = function(err, rows){
+  			if(err){
+  				console.log('TEMP UPDATE ERROR');
+					console.log(err);
+  			}else{
+  				console.log('--Temp update for '+message.docId+' ('+rows+' rows)');
+  			}
+  		};
+		Doc.update(conditions, update, options, callback);
+  //}
+});
+
+
 
 
 
@@ -277,7 +316,7 @@ app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
 								data.docs.push({
 									type: doc.type,
 									docId: doc.docId,
-									content: doc.content
+									content: doc.temp
 								});
 							};
 						}
@@ -297,9 +336,58 @@ app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
 });
 app.get(/^\/([a-zA-Z0-9]{7})\/preview\/?(?!.)/, function(req, res, next) {
 	var pageId = req.params[0];
-	res.render('preview', {
-		title: 'This is a preview',
-		pageId: pageId
+
+
+	console.log('Fetching preview '+ pageId);
+	Page.findOne({ pageId: pageId}, function (err, page){
+		if(err){
+			console.log('--But it\'s invalid');
+			req.flash("warn", "Invalid pageId, creating new page");
+			pageId = pageHash('zneak'+new Date().getTime()*Math.random());
+		}else{
+			if(page){
+				var data = { 
+					pageId: pageId,
+					title: pageId,
+					docs: [],
+					content: {
+						html: "",
+						css: "",
+						js: ""
+					}
+				};
+				Doc.find({pageId: pageId}, function (err, docs){
+					if(err){
+						console.log('--Invalid doc query');
+					}else{
+						console.log('--Found '+docs.length+' docs');
+						for(var i=0; i < docs.length; i++){
+							var doc = docs[i];
+							data.docs.push({
+								type: doc.type,
+								docId: doc.docId,
+								name: doc.name,
+								content: doc.temp
+							});
+							data.content[doc.type] = decodeURI(doc.temp);
+						};
+					}
+					res.render('preview', data);
+				});
+			}else{
+				console.log('--But it wasn\'t found, createing new page');
+				res.render('preview', { 
+					pageId: pageId,
+					title: pageId,
+					docs: [],
+					content: {
+						html: "",
+						css: "",
+						js: ""
+					}
+				});
+			}
+		}
 	});
 });
 app.post(/^\/([a-zA-Z0-9]{7})\/save\/?(?!.)/, function(req, res, next) {
@@ -396,7 +484,6 @@ app.post('/register', function(req, res, next) {
 //-------------------
 // Start Server
 //-------------------
-bayeux.attach(app);
 var port = process.env.PORT || 3000;
 app.listen(port, function() {
 	console.log("Listening on " + port);
