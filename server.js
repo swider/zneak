@@ -120,7 +120,7 @@ var
 		user: { type: String },
 		created: { type: Date },
 		lastchanged: { type: Date },
-		documents: [Doc]
+		documents: [ String ]
 	});
 	PageSchema.pre('save', function(next, done){
 		this.lastchanged = new Date().toISOString();
@@ -168,27 +168,44 @@ function register(username, email, password){
 //-------------------
 // Page Helpers
 //-------------------
-function insertPage(pageId){
+function insertPage(pageId, docs){
 	page = new Page();
 	page.pageId = pageId;
 	page.created = new Date().toISOString();
 	page.lastchanged = new Date().toISOString();
 	page.user = "test";
-	page.documents = [];
-	//page.save();
+	page.documents = docs;
 	page.save(function(err){
 		if(err){
-			console.log('SAVE ERROR');
+			console.log('PAGE SAVE ERROR');
 			console.log(err);
 		}
 	});
 	return page;
 }
+function insertDoc(pageId, o){
+	doc = new Doc();
+	doc.docId = o.docId;
+	doc.pageId = pageId;
+	doc.created = new Date().toISOString();
+	doc.lastchanged = new Date().toISOString();
+	doc.user = "test";
+	doc.name = "whatever";
+	doc.type = o.type;
+	doc.content = o.content;
+	doc.save(function(err){
+		if(err){
+			console.log('DOC SAVE ERROR');
+			console.log(err);
+		}
+	});
+	return doc;
+}
 
 
 
 //-------------------
-// Authentication
+// Hashes
 //-------------------
 function hash(msg, salt) {
 	return crypto
@@ -198,6 +215,8 @@ function hash(msg, salt) {
 }
 function passHash(pass) { return hash(pass, "zneak0wbo76jw84"); }
 function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,7); }
+function docHash(pageInfo) { return hash(pageInfo, "zneak0son68dk52").substr(0,10); }
+function newDocHash() { return docHash('zneak'+new Date().getTime()*Math.random()); }
 
 
 
@@ -207,33 +226,39 @@ function pageHash(pageInfo) { return hash(pageInfo, "zneak0ncf05bw26").substr(0,
 
 //=== General
 app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
-	console.log('.');
 	var pageId = req.params[0];
 	if(pageId){
 		console.log('Fetching pageId '+ pageId);
-		Page.findOne({ pageId: pageId}, function (err, doc){
+		Page.findOne({ pageId: pageId}, function (err, page){
 			if(err){
-				console.log('But it\'s invalid');
+				console.log('--But it\'s invalid');
 				req.flash("warn", "Invalid pageId, creating new page");
 				pageId = pageHash('zneak'+new Date().getTime()*Math.random());
 			}else{
-				if(doc){
-					console.log('And it exists');
-					res.render('editor', {
+				if(page){
+					console.log('--And it exists');
+					var data = { 
 						pageId: pageId,
-						docs: [
-							{
-								type: "html",
-								docId: "123abc"
-							},
-							{
-								type: "css",
-								docId: "456def"
-							}
-						]
+						docs: []
+					};
+					Doc.find({pageId: pageId}, function (err, docs){
+						if(err){
+							console.log('--Invalid doc query');
+						}else{
+							console.log('--Found '+docs.length+' docs');
+							for(var i=0; i < docs.length; i++){
+								var doc = docs[i];
+								data.docs.push({
+									type: doc.type,
+									docId: doc.docId,
+									content: doc.content
+								});
+							};
+						}
+						res.render('editor', data);
 					});
 				}else{
-					console.log('But it wasn\'t found');
+					console.log('--But it wasn\'t found');
 					req.flash("warn", "Page not found, creating new page");
 				}
 			}
@@ -241,22 +266,27 @@ app.get(/^\/([a-zA-Z0-9]{7})?\/?(?!.)/, function(req, res, next) {
 	}else{
 		console.log('Creating new page');
 		pageId = pageHash('zneak'+new Date().getTime()*Math.random());
+		res.render('editor', {
+			pageId: pageId,
+			docs: [
+				{
+					type: "html",
+					docId: newDocHash(),
+					content: "<h2>HTML</h2>"
+				},
+				{
+					type: "css",
+					docId: newDocHash(),
+					content: "#css { color: red; }"
+				},
+				{
+					type: "js",
+					docId: newDocHash(),
+					content: "console.log('hello world');"
+				}
+			]
+		});
 	}
-	res.render('editor', {
-		pageId: pageId,
-		docs: [
-			{
-				type: "html",
-				docId: "123abc",
-				content: "<h2>HTML</h2>"
-			},
-			{
-				type: "css",
-				docId: "456def",
-				content: "#css { color: red; }"
-			}
-		]
-	});
 });
 app.get(/^\/([a-zA-Z0-9]{7})\/preview\/?(?!.)/, function(req, res, next) {
 	var pageId = req.params[0];
@@ -268,6 +298,15 @@ app.get(/^\/([a-zA-Z0-9]{7})\/preview\/?(?!.)/, function(req, res, next) {
 app.post(/^\/([a-zA-Z0-9]{7})\/save\/?(?!.)/, function(req, res, next) {
 	var pageId = req.params[0];
 	console.log('Saving '+pageId);
+	var docArr = [];
+	for(var i=0; i < req.body.docs.length; i++){
+		var doc = req.body.docs[i];
+		docArr.push({
+			type: doc.type,
+			docId: doc.docId,
+			content: doc.content
+		});
+	};
 	Page.findOne({ pageId: pageId}, function (err, doc){
 		if(err){
 			if (req.accepts('json')) {
@@ -276,14 +315,20 @@ app.post(/^\/([a-zA-Z0-9]{7})\/save\/?(?!.)/, function(req, res, next) {
 			}
 			res.type('txt').send('invalid pageId');
 		}else{
-			if(doc){
+			if(doc){ // Do Update
 				if (req.accepts('json')) {
 					res.send({ success: 'update @doc' });
 					return;
 				}
 				res.type('txt').send('update @doc');
-			}else{
-				var page = insertPage(pageId);
+			}else{ // Do Insert
+				var docs = [];
+				for(var i=0; i < docArr.length; i++){
+					var doc = insertDoc(pageId, docArr[i]);
+					docs.push(doc._id);
+				};
+				console.log(docs);
+				var page = insertPage(pageId, docs);
 				if (req.accepts('json')) {
 					res.send({ success: 'insert', page: page });
 					return;
@@ -291,12 +336,6 @@ app.post(/^\/([a-zA-Z0-9]{7})\/save\/?(?!.)/, function(req, res, next) {
 				res.type('txt').send('insert');
 			}
 		}
-	});
-});
-
-app.get('/account', requiresLogin, function(req, res, next) {
-	res.render('index', {
-		title: 'This is a login test'
 	});
 });
 
@@ -344,17 +383,6 @@ app.post('/register', function(req, res, next) {
 			res.redirect(req.body.next+'?fromLogin=true');
 		});
 	}
-});
-
-
-//=== Helper
-app.get('/partial', function(req, res, next) {
-	res.partial('nav');
-});
-app.get('/partial_html', function(req, res, next) {
-	res.partial('nav', function(err, html) {
-		res.send(html);
-	});
 });
 
 

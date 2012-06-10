@@ -1,33 +1,30 @@
 (function(){
 	$(function(){
-		
-		// Page Info
-		var pageId = zneak.page.pageId;
-		$.each(zneak.page.docs, function(i, el){
-
-		});
-
 
 		// Ace
-		var
-			html = ace.edit("html"),
-			css = ace.edit("css"),
-			js = ace.edit("js");
 		var HTMLMode = require("ace/mode/html").Mode;
 		var CSSMode = require("ace/mode/css").Mode;
 		var JavaScriptMode = require("ace/mode/javascript").Mode;
-		html.getSession().setMode(new HTMLMode());
-		css.getSession().setMode(new CSSMode());
-		js.getSession().setMode(new JavaScriptMode());
-		$.each([html,css,js], function(i,el){ el.setTheme("ace/theme/twilight"); });
-		//prefill
-		setTimeout(function(){
-			var $preview = $('iframe#preview').contents();
-			html.getSession().getDocument().setValue($preview.find('body').html());
-			css.getSession().getDocument().setValue($preview.find('head style').html());
-				//js.getSession().getDocument().setValue($preview.find('script').html());
-			js.getSession().getDocument().setValue("var hello = function(){ console.log('Hello World'); };");
-		}, 100);
+
+		// Page Setup
+		var
+			pageId = zneak.page.pageId,
+			editors = [];
+		$.each(zneak.page.docs, function(i, doc){
+			var editor = ace.edit(doc.type);
+			editor.setTheme("ace/theme/twilight");
+			switch(doc.type){
+				case "html": editor.getSession().setMode(new HTMLMode()); break;
+				case "css": editor.getSession().setMode(new CSSMode()); break;
+				case "js": editor.getSession().setMode(new JavaScriptMode()); break;
+			}
+			editor.setShowPrintMargin(false);
+			editor.setShowInvisibles(true);
+			editor.getSession().getDocument().setValue(doc.content);
+			editors[doc.type] = editor;
+		});
+
+
 
 		//html.commands.addCommands([{
 		//	name: "gotoline",
@@ -38,8 +35,8 @@
 		//	readOnly: true
 		//}]);
 
-		css.setShowPrintMargin(false);
-		css.setShowInvisibles(true);
+		//css.setShowPrintMargin(false);
+		//css.setShowInvisibles(true);
 		//css.setShowFoldWidgets(true);
 		//css.session.setFoldStyle("markbegin");
 		//var MultiSelect = require("ace/multi_select").MultiSelect;
@@ -61,28 +58,23 @@
 		});
 
 		var sendUpdate = function(e){
-			var pubHTML = client.publish('/'+pageId+'/html', { html: html.getSession().getDocument().getValue() });
-			var pubCSS = client.publish('/'+pageId+'/css', { css: css.getSession().getDocument().getValue() });
-			var pubJS = client.publish('/'+pageId+'/js', { js: js.getSession().getDocument().getValue() });
+			var pubHTML = client.publish('/'+pageId+'/html', { html: editors['html'].getSession().getDocument().getValue() });
+			var pubCSS = client.publish('/'+pageId+'/css', { css: editors['css'].getSession().getDocument().getValue() });
+			var pubJS = client.publish('/'+pageId+'/js', { js: editors['js'].getSession().getDocument().getValue() });
 			e.preventDefault();
 		};
 
 		$(document).on('body', 'keyup.Ctrl_s', sendUpdate);
 		$("#run").click(sendUpdate);
 		$("#save").click(function(e){
-			var data = {
-				docs: {
-					html: {
-						content: html.getSession().getDocument().getValue()
-					},
-					css: {
-						content: css.getSession().getDocument().getValue()
-					},
-					js: {
-						content: js.getSession().getDocument().getValue()
-					}
-				}
-			};
+			var data = { docs: [] };
+			$.each(zneak.page.docs, function(i, el){
+				data.docs.push({
+					type: el.type,
+					docId: el.docId,
+					content: editors[el.type].getSession().getDocument().getValue()
+				});
+			});
 			$.ajax({
 				type: "POST",
 				dataType: "json",

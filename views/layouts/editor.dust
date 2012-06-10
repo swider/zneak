@@ -70,6 +70,7 @@
 						{
 							type: "{type}",
 							docId: "{docId}",
+							content: "{content|s}"
 						}{@sep},{/sep}
 					{/docs}
 				]
