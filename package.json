@@ -9,7 +9,7 @@
 		"express": "2.5.9",
 		"faye": "0.8.2",
 		"mongoose": "2.6.5",
-		"express-dust": "0.1.3",
+		"express-dust": "0.1.4",
 		"crypto": "0.0.3"
 	}
 }
